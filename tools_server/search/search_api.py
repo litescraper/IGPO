@@ -8,6 +8,8 @@ Supports:
 Reference: DeepResearcher/scrl/handler/web_search_agent/search/search_api.py
 """
 
+import os
+from urllib.parse import urlparse
 import json
 import time
 import http.client
@@ -86,7 +88,10 @@ def serper_google_search(
     
     for attempt in range(max_retries):
         try:
-            conn = http.client.HTTPSConnection("google.serper.dev")
+            serper_url = urlparse(os.getenv("SERPER_BASE_URL", "https://google.serper.dev"))
+            conn = (
+                http.client.HTTPConnection if serper_url.scheme == "http" else http.client.HTTPSConnection
+            )(serper_url.netloc)
             payload = json.dumps({
                 "q": query,
                 "num": top_k,
@@ -97,7 +102,7 @@ def serper_google_search(
                 'X-API-KEY': serper_api_key,
                 'Content-Type': 'application/json'
             }
-            conn.request("POST", "/search", payload, headers)
+            conn.request("POST", f"{serper_url.path.rstrip('/')}/search", payload, headers)
             res = conn.getresponse()
             data = json.loads(res.read().decode("utf-8"))
             
